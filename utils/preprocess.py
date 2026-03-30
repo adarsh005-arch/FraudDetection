@@ -141,6 +141,7 @@ plt.plot(losses)
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
 plt.title("Training Loss Graph")
+plt.savefig("loss.png") 
 plt.show()
 
 #accuracy
