@@ -114,10 +114,11 @@ y_train_tensor = torch.tensor(y_train.values, dtype=torch.long)
 hybrid = HybridModel()
 
 # Loss function
-criterion = nn.CrossEntropyLoss()
+class_weights = torch.tensor([1.0, 3.0])  # fraud more important
+criterion = nn.CrossEntropyLoss(weight=class_weights)
 
-optimizer = optim.Adam(hybrid.parameters(), lr=0.001)
-epochs = 10
+optimizer = optim.Adam(hybrid.parameters(), lr=0.0005)
+epochs = 30
 losses = []
 for epoch in range(epochs):
     optimizer.zero_grad()
@@ -153,3 +154,37 @@ preds = torch.argmax(output, dim=1)
 accuracy = accuracy_score(y_train_tensor.numpy(), preds.detach().numpy())
 
 print("Accuracy:", accuracy)
+
+#confusion Matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+print("\nEvaluating Model...")
+
+# Predictions
+preds = torch.argmax(output, dim=1).detach().numpy()
+y_true = y_train_tensor.numpy()
+
+# Metrics
+accuracy = accuracy_score(y_true, preds)
+precision = precision_score(y_true, preds)
+recall = recall_score(y_true, preds)
+f1 = f1_score(y_true, preds)
+
+print("Accuracy:", accuracy)
+print("Precision:", precision)
+print("Recall:", recall)
+print("F1 Score:", f1)
+
+# Confusion Matrix
+cm = confusion_matrix(y_true, preds)
+
+plt.figure()
+sns.heatmap(cm, annot=True, fmt='d')
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix")
+
+plt.savefig("confusion_matrix.png")   # save for GitHub
+plt.show()
