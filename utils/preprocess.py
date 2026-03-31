@@ -30,6 +30,34 @@ df_normal_down = resample(df_normal,
 # Combine
 df_balanced = pd.concat([df_normal_down, df_fraud])
 
+import matplotlib.pyplot as plt
+
+print("\nCreating Fraud Visualization...")
+
+plt.figure()
+
+# Separate fraud and normal
+normal = df_balanced[df_balanced['Class'] == 0]
+fraud = df_balanced[df_balanced['Class'] == 1]
+
+# Plot normal transactions
+plt.scatter(normal['Time'], normal['Amount'], 
+            color='blue', label='Normal', alpha=0.5)
+
+# Plot fraud transactions (highlighted)
+plt.scatter(fraud['Time'], fraud['Amount'], 
+            color='red', label='Fraud', alpha=0.9, marker='x')
+
+plt.xlabel("Time")
+plt.ylabel("Amount")
+plt.title("Fraud vs Normal Transactions")
+
+plt.legend()     # shows labels
+plt.grid(True)   # adds grid for clarity
+
+plt.savefig("fraud_visualization.png")
+#plt.show()
+
 print("Balanced data:")
 print(df_balanced['Class'].value_counts())
 
@@ -120,6 +148,7 @@ criterion = nn.CrossEntropyLoss(weight=class_weights)
 optimizer = optim.Adam(hybrid.parameters(), lr=0.0005)
 epochs = 30
 losses = []
+accuracies = []
 for epoch in range(epochs):
     optimizer.zero_grad()
 
@@ -132,17 +161,34 @@ for epoch in range(epochs):
 
     loss.backward()
     optimizer.step()
+    preds = torch.argmax(output, dim=1)
+    acc = (preds == y_train_tensor).float().mean().item()
+    accuracies.append(acc)
     losses.append(loss.item())
 
     print(f"Epoch {epoch+1}, Loss: {loss.item()}")
 import matplotlib.pyplot as plt
 
+plt.figure(figsize=(12, 8))
+
+# Loss graph
+plt.subplot(2, 2, 1)
 plt.plot(losses)
+plt.title("Training Loss")
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
-plt.title("Training Loss Graph")
-plt.savefig("loss.png") 
-plt.show()
+
+# Accuracy graph
+plt.subplot(2, 2, 2)
+plt.plot(accuracies)
+plt.title("Training Accuracy")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+
+plt.tight_layout()
+
+plt.savefig("combined_graphs.png")
+#plt.show()
 
 #accuracy
 from sklearn.metrics import accuracy_score
@@ -180,6 +226,26 @@ print("F1 Score:", f1)
 
 # Confusion Matrix
 cm = confusion_matrix(y_true, preds)
+
+tn, fp, fn, tp = cm.ravel()
+
+print("\n--- Confusion Matrix Analysis ---")
+print(f"True Positives (Fraud detected correctly): {tp}")
+print(f"False Negatives (Fraud missed ❌): {fn}")
+print(f"False Positives (False alarm ⚠️): {fp}")
+print(f"True Negatives (Correct normal): {tn}")
+
+print("\n--- Model Insights ---")
+
+if fn > 0:
+    print("⚠️ Model is missing some fraud cases (needs improvement)")
+else:
+    print("✅ No fraud cases missed")
+
+if fp > 0:
+    print("⚠️ Some normal transactions flagged as fraud")
+else:
+    print("✅ No false alarms")
 
 plt.figure()
 sns.heatmap(cm, annot=True, fmt='d')
