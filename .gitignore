@@ -9,3 +9,4 @@ env/
 
 # large files (optional)
 *.npy
+data/creditcard.csv
