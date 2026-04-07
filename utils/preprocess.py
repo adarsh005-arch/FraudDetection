@@ -1,7 +1,7 @@
+import numpy as np
 import pandas as pd
 from sklearn.utils import resample
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 import torch
 
 print("Step 1: Loading dataset...")
@@ -34,29 +34,20 @@ import matplotlib.pyplot as plt
 
 print("\nCreating Fraud Visualization...")
 
-plt.figure()
-
-# Separate fraud and normal
 normal = df_balanced[df_balanced['Class'] == 0]
 fraud = df_balanced[df_balanced['Class'] == 1]
 
-# Plot normal transactions
-plt.scatter(normal['Time'], normal['Amount'], 
-            color='blue', label='Normal', alpha=0.5)
-
-# Plot fraud transactions (highlighted)
-plt.scatter(fraud['Time'], fraud['Amount'], 
-            color='red', label='Fraud', alpha=0.9, marker='x')
+plt.figure()
+plt.scatter(normal['Time'], normal['Amount'], color='blue', alpha=0.5)
+plt.scatter(fraud['Time'], fraud['Amount'], color='red', alpha=0.9, marker='x')
 
 plt.xlabel("Time")
 plt.ylabel("Amount")
 plt.title("Fraud vs Normal Transactions")
-
-plt.legend()     # shows labels
-plt.grid(True)   # adds grid for clarity
+plt.legend(["Normal", "Fraud"])
+plt.grid(True)
 
 plt.savefig("fraud_visualization.png")
-#plt.show()
 
 print("Balanced data:")
 print(df_balanced['Class'].value_counts())
@@ -69,162 +60,100 @@ df_balanced['Time'] = scaler.fit_transform(df_balanced[['Time']])
 
 print("Normalization done!")
 
-print("\nStep 5: Splitting data...")
+print("\nLoading SAME test data used in training...")
 
-X = df_balanced.drop('Class', axis=1)
-y = df_balanced['Class']
+X_test = np.load("X_test.npy", allow_pickle=True)
+y_test = np.load("y_test.npy", allow_pickle=True)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+# Balance test data (same logic)
+test_data = pd.DataFrame(X_test)
+test_data['Class'] = y_test
+
+fraud = test_data[test_data['Class'] == 1]
+normal = test_data[test_data['Class'] == 0]
+
+n_samples = min(len(normal), len(fraud) * 2)
+
+normal_downsampled = resample(
+    normal,
+    replace=False,
+    n_samples=n_samples,
+    random_state=42
 )
 
-print("Split done!")
+balanced_test = pd.concat([fraud, normal_downsampled])
 
-print("\nStep 6: Sorting for Transformer...")
-X_train = X_train.sort_values(by='Time')
+X_test = balanced_test.drop("Class", axis=1)
+y_test = balanced_test["Class"]
 
-print("Sorting done!")
+print("\nStep 5: Test data ready!")
 
-print("\nStep 7: Converting to tensor...")
-X_train_tensor = torch.tensor(X_train.values, dtype=torch.float)
+# ------------------ MODEL ------------------
 
-print("Tensor shape:", X_train_tensor.shape)
-
-print("\n✅ PREPROCESSING COMPLETED SUCCESSFULLY!")
-
-from utils.graph_builder import build_graph
-
-graph_data = build_graph(X_train_tensor)
-
-print(graph_data)
-
-print("Running GNN now...")
-from models.gnn_model import GNNModel
-
-# Initialize model
-input_dim = graph_data.x.shape[1]
-gnn = GNNModel(input_dim)
-
-# Run model
-gnn_output = gnn(graph_data)
-
-print("GNN Output Shape:", gnn_output.shape)
-
-#transformer
-from models.transformer_model import TransformerModel
-
-print("Running Transformer now...")
-
-transformer = TransformerModel(input_dim)
-transformer_output = transformer(graph_data.x)
-
-print("Transformer Output Shape:", transformer_output.shape)
-
-#Hybrid Model
 from models.hybrid_model import HybridModel
 
-print("Running Hybrid Model...")
+print("\nRunning Hybrid Model...")
 
-hybrid = HybridModel()
+input_dim = X_test.shape[1]
+hidden_dim = 64   
 
-output = hybrid(gnn_output, transformer_output)
+hybrid = HybridModel(input_dim, hidden_dim)
+
+# Load trained model
+hybrid.load_state_dict(torch.load("best_model.pt"))
+hybrid.eval()
+
+# Convert to tensor
+X_test_tensor = torch.tensor(X_test.values, dtype=torch.float32)
+
+# Forward pass
+output = hybrid(X_test_tensor)
+
+y_true = y_test.values
 
 print("Final Output Shape:", output.shape)
 
-#training
-import torch.nn as nn
-import torch.optim as optim
+# ------------------ GRAPHS ------------------
 
-# Labels
-y_train_tensor = torch.tensor(y_train.values, dtype=torch.long)
-
-# Model
-hybrid = HybridModel()
-
-# Loss function
-class_weights = torch.tensor([1.0, 3.0])  # fraud more important
-criterion = nn.CrossEntropyLoss(weight=class_weights)
-
-optimizer = optim.Adam(hybrid.parameters(), lr=0.0005)
-epochs = 30
-losses = []
-accuracies = []
-for epoch in range(epochs):
-    optimizer.zero_grad()
-
-    gnn_out = gnn(graph_data)
-    transformer_out = transformer(graph_data.x)
-
-    output = hybrid(gnn_out, transformer_out)
-
-    loss = criterion(output, y_train_tensor)
-
-    loss.backward()
-    optimizer.step()
-    preds = torch.argmax(output, dim=1)
-    acc = (preds == y_train_tensor).float().mean().item()
-    accuracies.append(acc)
-    losses.append(loss.item())
-
-    print(f"Epoch {epoch+1}, Loss: {loss.item()}")
 import matplotlib.pyplot as plt
 
-plt.figure(figsize=(12, 8))
+losses = np.load("losses.npy")
+accuracies = np.load("accuracies.npy")
 
-# Loss graph
-plt.subplot(2, 2, 1)
+plt.figure(figsize=(12, 4))
+
+plt.subplot(1, 2, 1)
 plt.plot(losses)
 plt.title("Training Loss")
-plt.xlabel("Epoch")
-plt.ylabel("Loss")
 
-# Accuracy graph
-plt.subplot(2, 2, 2)
+plt.subplot(1, 2, 2)
 plt.plot(accuracies)
 plt.title("Training Accuracy")
-plt.xlabel("Epoch")
-plt.ylabel("Accuracy")
 
 plt.tight_layout()
-
 plt.savefig("combined_graphs.png")
-#plt.show()
 
-#accuracy
-from sklearn.metrics import accuracy_score
+# ------------------ METRICS ------------------
 
-print("\nEvaluating Model...")
-
-# Predictions
-preds = torch.argmax(output, dim=1)
-
-accuracy = accuracy_score(y_train_tensor.numpy(), preds.detach().numpy())
-
-print("Accuracy:", accuracy)
-
-#confusion Matrix
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 import seaborn as sns
-import matplotlib.pyplot as plt
 
 print("\nEvaluating Model...")
 
-# Predictions
-preds = torch.argmax(output, dim=1).detach().numpy()
-y_true = y_train_tensor.numpy()
+preds = (torch.sigmoid(output) > 0.65).float().detach().numpy()
 
-# Metrics
 accuracy = accuracy_score(y_true, preds)
 precision = precision_score(y_true, preds)
 recall = recall_score(y_true, preds)
 f1 = f1_score(y_true, preds)
 
-print("Accuracy:", accuracy)
-print("Precision:", precision)
-print("Recall:", recall)
-print("F1 Score:", f1)
+print(f"Accuracy: {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"F1 Score: {f1:.4f}")
 
-# Confusion Matrix
+# ------------------ CONFUSION MATRIX ------------------
+
 cm = confusion_matrix(y_true, preds)
 
 tn, fp, fn, tp = cm.ravel()
@@ -253,5 +182,5 @@ plt.xlabel("Predicted")
 plt.ylabel("Actual")
 plt.title("Confusion Matrix")
 
-plt.savefig("confusion_matrix.png")   # save for GitHub
+plt.savefig("confusion_matrix.png")
 plt.show()
