@@ -3,6 +3,7 @@ import torch
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.utils import resample
 
 from models.hybrid_model import HybridModel
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
@@ -25,8 +26,23 @@ st.write(df.head())
 
 st.subheader(" Fraud vs Normal Visualization")
 
-normal = df[df['Class'] == 0]
-fraud = df[df['Class'] == 1]
+from sklearn.utils import resample
+
+# SAME AS PREPROCESS
+df_normal = df[df.Class == 0]
+df_fraud = df[df.Class == 1]
+
+df_normal_down = resample(
+    df_normal,
+    replace=False,
+    n_samples=len(df_fraud),
+    random_state=42
+)
+
+df_balanced = pd.concat([df_normal_down, df_fraud])
+
+normal = df_balanced[df_balanced['Class'] == 0]
+fraud = df_balanced[df_balanced['Class'] == 1]
 
 fig, ax = plt.subplots()
 ax.scatter(normal['Time'], normal['Amount'], color='blue', alpha=0.3)
@@ -38,14 +54,33 @@ ax.set_title("Fraud vs Normal Transactions")
 
 st.pyplot(fig)
 
-# ---------------- LOAD TRAINED DATA ----------------
+# ---------------- LOAD SAME TEST DATA ----------------
 
 st.subheader(" Model Evaluation")
 
 X_test = np.load("X_test.npy", allow_pickle=True)
 y_test = np.load("y_test.npy", allow_pickle=True)
 
-X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
+# 🔥 SAME BALANCING AS PREPROCESS
+test_data = pd.DataFrame(X_test)
+test_data['Class'] = y_test
+
+fraud = test_data[test_data['Class'] == 1]
+normal = test_data[test_data['Class'] == 0]
+
+n_samples = min(len(normal), len(fraud) * 2)
+
+normal_downsampled = resample(
+    normal,
+    replace=False,
+    n_samples=n_samples,
+    random_state=42
+)
+
+balanced_test = pd.concat([fraud, normal_downsampled])
+
+X_test = balanced_test.drop("Class", axis=1)
+y_test = balanced_test["Class"]
 
 # ---------------- LOAD MODEL ----------------
 
@@ -58,10 +93,12 @@ model.eval()
 
 # ---------------- PREDICTIONS ----------------
 
-output = model(X_test_tensor)
-preds = (torch.sigmoid(output) > 0.65).float().detach().numpy()
+X_test_tensor = torch.tensor(X_test.values, dtype=torch.float32)
 
-y_true = y_test
+output = model(X_test_tensor)
+
+preds = (torch.sigmoid(output) > 0.65).float().detach().numpy()
+y_true = y_test.values
 
 # ---------------- METRICS ----------------
 
