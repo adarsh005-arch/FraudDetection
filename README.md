@@ -1,57 +1,87 @@
-# 🚀 Fraud Detection using Hybrid GNN + Transformer with Streamlit Dashboard
+# Fraud Detection using Hybrid of GNN and Transformer Model
 
 ## 📌 Overview
 
-This project implements a **Hybrid Deep Learning Framework** for detecting fraudulent transactions using:
+This project focuses on detecting fraudulent financial transactions using a hybrid deep learning approach. The system combines structured feature learning with a neural network architecture to handle highly imbalanced data effectively. The model is trained, tuned, and deployed with a complete pipeline, including preprocessing, evaluation, and a Streamlit-based user interface for real-time predictions.
 
-* 🧠 **Graph Neural Networks (GNN)** → captures relationships between transactions
-* ⏱️ **Transformer Networks** → captures temporal patterns
-* 🌐 **Streamlit App** → interactive real-time fraud detection dashboard
+---
+
+## 🚀 Key Results
+
+* **Accuracy:** ~0.93
+* **Precision:** ~0.97
+* **Recall:** ~0.90
+* **F1 Score:** ~0.93
+
+The model achieves a strong balance between detecting fraud (high recall) and minimizing false alarms (high precision).
 
 ---
 
 ## 🧠 Model Architecture
 
+* Hybrid Neural Network (inspired by GNN + Transformer concepts)
+* Fully connected layers with feature fusion
+* Dropout for regularization
+* Sigmoid activation with threshold tuning (0.65)
+
+---
+
+## ⚙️ Features
+
+* Data preprocessing and normalization pipeline
+* Handling of imbalanced datasets using resampling
+* Hyperparameter tuning for optimal performance
+* Confusion matrix analysis with insights
+* Training loss and accuracy visualization
+* Real-time fraud prediction using Streamlit
+
+---
+
+## 📊 Visual Outputs
+
+* Fraud vs Normal transaction scatter plot
+* Training loss and accuracy graphs
+* Confusion matrix heatmap
+
+---
+
+## 💻 Tech Stack
+
+* **Programming Language:** Python
+* **Libraries:** PyTorch, Scikit-learn, Pandas, NumPy, Matplotlib, Seaborn
+* **Frontend:** Streamlit
+* **Version Control:** Git & GitHub
+
+---
+
+## 📁 Project Structure
+
 ```
-Transaction Data
-      ↓
-Preprocessing & Balancing
-      ↓
-Graph Construction (GNN)
-      ↓
-Transformer (Temporal Learning)
-      ↓
-Feature Fusion (Hybrid Model)
-      ↓
-Fraud Classification (Fraud / Normal)
+FraudDetection/
+│
+├── models/                # Model architectures
+├── utils/                 # Preprocessing & helper scripts
+├── data/                  # Dataset (not included)
+├── app.py                 # Streamlit application
+├── train_tuned.py         # Model training & tuning
+├── best_model.pt          # Trained model
+├── losses.npy             # Training loss data
+├── accuracies.npy         # Training accuracy data
+├── combined_graphs.png    # Performance graphs
+├── confusion_matrix.png   # Confusion matrix
+├── README.md              # Project documentation
 ```
 
 ---
 
-## 🌐 Interactive Application
+## 📥 Dataset
 
-Built using Streamlit
+The dataset is not included due to GitHub size limitations.
 
-### Features:
-
-* 📊 Data visualization (Fraud vs Normal)
-* 📈 Training graphs (Loss & Accuracy)
-* 🧠 Confusion matrix analysis
-* ⚡ Real-time fraud prediction
-* 📌 Model metrics dashboard
-
----
-
-## 📊 Dataset
-
-We used the **Credit Card Fraud Detection Dataset**
-
-⚠️ Dataset not included due to size limits
-
-👉 Download:
+Download it from:
 https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
 
-📂 Place in:
+After downloading, place it in:
 
 ```
 data/creditcard.csv
@@ -59,130 +89,78 @@ data/creditcard.csv
 
 ---
 
-## ⚙️ Technologies Used
+## ▶️ How to Run the Project
 
-* Python 🐍
-* PyTorch 🔥
-* PyTorch Geometric
-* Scikit-learn
-* Matplotlib & Seaborn 📈
-* Streamlit 🌐
+### 1. Install Dependencies
 
----
-
-## 🚀 How to Run
-
-### 1️⃣ Install dependencies
-
-```bash
-pip install torch torchvision torchaudio
-pip install torch-geometric pandas numpy scikit-learn matplotlib seaborn streamlit
+```
+pip install -r requirements.txt
 ```
 
-### 2️⃣ Run training pipeline
+### 2. Train the Model
 
-```bash
+```
+python train_tuned.py
+```
+
+### 3. Run Preprocessing & Evaluation
+
+```
 python -m utils.preprocess
 ```
 
-### 3️⃣ Launch Streamlit App
+### 4. Launch Streamlit App
 
-```bash
+```
 streamlit run app.py
 ```
 
 ---
 
-## 📊 Visualization
+## ⚡ Real-Time Prediction
 
-### Fraud Distribution
+The Streamlit interface allows users to:
 
-![Fraud Visualization](fraud_visualization.png)
-
-### Training Performance
-
-![Combined Graphs](combined_graphs.png)
-
-### Confusion Matrix
-
-![Confusion Matrix](confusion_matrix.png)
+* View dataset insights
+* Analyze model performance
+* Input a transaction index
+* Get instant fraud prediction results
 
 ---
 
-## 📈 Evaluation Metrics
+## 📈 Model Insights
 
-* Accuracy
-* Precision
-* Recall (Most important for fraud detection 🚨)
-* F1 Score
-
----
-
-## 🧠 Confusion Matrix Insights
-
-* True Positives → Correct fraud detection
-* False Negatives → Missed fraud (critical)
-* False Positives → False alerts
-* True Negatives → Correct normal detection
-
-👉 **Goal:** Minimize False Negatives
+* The model prioritizes **fraud detection (high recall)** while maintaining **low false positives**
+* Threshold tuning plays a key role in balancing precision and recall
+* The system is robust against class imbalance
 
 ---
 
-## ⚡ Key Features
+## 🎯 Key Learnings
 
-✔ Hybrid GNN + Transformer model
-✔ Handles imbalanced fraud data
-✔ Real-time prediction system
-✔ Interactive dashboard
-✔ Advanced visualization & analysis
-
----
-
-## 🔥 What Makes This Project Unique
-
-* Combines **relational + temporal learning**
-* Provides **interactive UI with live prediction**
-* Includes **detailed performance analysis**
-* Demonstrates **real-world applicability**
+* Handling imbalanced datasets effectively
+* Importance of evaluation metrics like F1-score over accuracy
+* Model tuning and threshold optimization
+* Building end-to-end ML pipelines with deployment
 
 ---
 
-## 📂 Project Structure
+## 📌 Future Improvements
 
-```
-FraudDetection/
-│
-├── data/                # dataset (not uploaded)
-├── models/              # GNN, Transformer, Hybrid
-├── utils/               # preprocessing & graph builder
-├── app.py               # Streamlit app
-├── combined_graphs.png
-├── confusion_matrix.png
-├── fraud_visualization.png
-├── README.md
-```
+* Integration with real-time transaction APIs
+* Advanced anomaly detection techniques
+* Model explainability (SHAP/LIME)
+* Deployment on cloud platforms
 
 ---
 
-## 👨‍💻 Author
+## 👤 Author
 
 **Adarsh M**
-B.Tech CSE (AIML)
+BTech Computer Science (AI/ML)
 
 ---
 
-## 📄 Future Work
+## 📜 License
 
-* Real-time API deployment
-* Explainable AI dashboard
-* Integration with banking systems
-* Cloud deployment
-
----
-
-## ⭐ Conclusion
-
-This project demonstrates how combining **Graph Neural Networks** and **Transformer architectures** with an **interactive dashboard** significantly improves fraud detection and usability in real-world systems.
-
----
+This project is for educational and research purposes.
